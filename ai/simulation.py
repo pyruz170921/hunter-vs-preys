@@ -6,14 +6,8 @@ from ai.prey_ai import PreyAI
 
 class SimulationEngine:
 
-    def __init__(
-        self,
-        board_size,
-        hunter_algorithm
-    ):
-        self.board = BoardGenerator.generate(
-            board_size
-        )
+    def __init__(self, board_size, hunter_algorithm):
+        self.board = BoardGenerator.generate(board_size)
 
         self.graph = GridGraph(
             self.board["size"],
@@ -47,6 +41,7 @@ class SimulationEngine:
         self.hunter_moves = 0
         self.capture_order = []
         self.max_turns = 500
+        self.movements = []
 
     def alive_preys(self):
         return [
@@ -55,20 +50,34 @@ class SimulationEngine:
             if prey["alive"]
         ]
 
+    def register_movement(
+        self,
+        entity_type,
+        entity_number,
+        from_position,
+        to_position
+    ):
+        self.movements.append({
+            "entity_type": entity_type,
+            "entity_number": entity_number,
+            "from_x": from_position[0],
+            "from_y": from_position[1],
+            "to_x": to_position[0],
+            "to_y": to_position[1],
+            "turn": self.time_elapsed + 1,
+        })
+
     def capture_prey(self, prey):
         prey["alive"] = False
         prey["captured_at"] = self.time_elapsed + 1
 
-        self.capture_order.append(
-            prey["id"]
-        )
+        self.capture_order.append(prey["id"])
 
         print(
             f"CAPTURADA PRESA {prey['id']}"
         )
 
     def step(self):
-
         if self.time_elapsed >= self.max_turns:
             print("LIMITE DE TURNOS ALCANZADO")
             return False
@@ -83,6 +92,8 @@ class SimulationEngine:
             for prey in alive
         ]
 
+        old_hunter_position = self.hunter
+
         new_hunter_position = HunterAI.next_move(
             self.graph,
             self.hunter,
@@ -92,6 +103,13 @@ class SimulationEngine:
 
         self.hunter = new_hunter_position
         self.hunter_moves += 1
+
+        self.register_movement(
+            "HUNTER",
+            0,
+            old_hunter_position,
+            new_hunter_position
+        )
 
         for prey in alive:
             if prey["position"] == self.hunter:
@@ -108,6 +126,8 @@ class SimulationEngine:
             for prey in alive
         }
 
+        occupied_positions.add(self.hunter)
+
         for prey in alive:
             occupied_positions.remove(
                 prey["position"]
@@ -119,6 +139,8 @@ class SimulationEngine:
 
             if len(prey["history"]) > 10:
                 prey["history"].pop(0)
+
+            old_prey_position = prey["position"]
 
             new_position = PreyAI.choose_move(
                 self.graph,
@@ -137,6 +159,13 @@ class SimulationEngine:
 
             prey["moves"] += 1
             prey["survival_time"] += 1
+
+            self.register_movement(
+                "PREY",
+                prey["id"],
+                old_prey_position,
+                prey["position"]
+            )
 
         for prey in self.alive_preys():
             if prey["position"] == self.hunter:
@@ -161,9 +190,7 @@ class SimulationEngine:
         for prey in self.preys:
             if prey["alive"]:
                 row, col = prey["position"]
-                board[row][col] = str(
-                    prey["id"]
-                )
+                board[row][col] = str(prey["id"])
 
         row, col = self.hunter
         board[row][col] = "H"
@@ -204,6 +231,6 @@ class SimulationEngine:
                 f"{prey['moves']}"
             )
 
-        print("\n")
+        print()
         print(f"Tiempo total: {self.time_elapsed}")
         print(f"Movimientos del cazador: {self.hunter_moves}")

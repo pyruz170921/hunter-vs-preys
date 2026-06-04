@@ -7,6 +7,7 @@ from game.models import (
     Hunter,
     Prey,
     GameEvent,
+    Movement,
 )
 
 
@@ -49,9 +50,10 @@ class SimulationPersistenceService:
             algorithm=simulation.hunter_algorithm,
         )
 
-        ranking = simulation.ranking()
-
-        for position, prey in enumerate(ranking, start=1):
+        for position, prey in enumerate(
+            simulation.ranking(),
+            start=1
+        ):
             Prey.objects.create(
                 game=game,
                 number=prey["id"],
@@ -63,6 +65,18 @@ class SimulationPersistenceService:
                 captured_at=prey["captured_at"],
                 ranking_position=position,
                 algorithm=simulation.prey_algorithm,
+            )
+
+        for movement in simulation.movements:
+            Movement.objects.create(
+                game=game,
+                entity_type=movement["entity_type"],
+                entity_number=movement["entity_number"],
+                from_x=movement["from_x"],
+                from_y=movement["from_y"],
+                to_x=movement["to_x"],
+                to_y=movement["to_y"],
+                turn=movement["turn"],
             )
 
         GameEvent.objects.create(
