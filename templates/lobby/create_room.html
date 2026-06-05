@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Crear Sala</title>
+
+    <style>
+
+        body{
+            font-family: Arial, sans-serif;
+            background:#f4f6f8;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height:100vh;
+            margin:0;
+        }
+
+        .card{
+            background:white;
+            width:500px;
+            padding:35px;
+            border-radius:12px;
+            box-shadow:0 4px 15px rgba(0,0,0,.15);
+        }
+
+        h1{
+            text-align:center;
+            color:#1976d2;
+        }
+
+        p{
+            margin-bottom:15px;
+        }
+
+        input,
+        select{
+            width:100%;
+            padding:10px;
+            border:1px solid #ccc;
+            border-radius:5px;
+            box-sizing:border-box;
+        }
+
+        button{
+            width:100%;
+            padding:12px;
+            border:none;
+            background:#2e7d32;
+            color:white;
+            font-size:16px;
+            border-radius:5px;
+            cursor:pointer;
+            margin-top:10px;
+        }
+
+        button:hover{
+            background:#1b5e20;
+        }
+
+        .actions{
+            margin-top:20px;
+            text-align:center;
+        }
+
+        .btn{
+            display:inline-block;
+            padding:10px 15px;
+            text-decoration:none;
+            color:white;
+            border-radius:5px;
+            margin:5px;
+        }
+
+        .blue{
+            background:#1976d2;
+        }
+
+        .orange{
+            background:#ef6c00;
+        }
+
+        .info{
+            background:#e3f2fd;
+            border-left:4px solid #1976d2;
+            padding:10px;
+            margin-bottom:20px;
+            border-radius:5px;
+        }
+
+    </style>
+
+</head>
+<body>
+
+<div class="card">
+
+    <h1>
+        Crear Sala
+    </h1>
+
+    <div class="info">
+
+        <strong>Configuración de la partida</strong>
+
+        <ul>
+
+            <li>
+                1 Cazador (Administrador)
+            </li>
+
+            <li>
+                4 Presas
+            </li>
+
+            <li>
+                Máximo 5 jugadores
+            </li>
+
+            <li>
+                Simulación automática
+            </li>
+
+        </ul>
+
+    </div>
+
+    <form method="post">
+
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button type="submit">
+            Crear Sala
+        </button>
+
+    </form>
+
+    <div class="actions">
+
+        <a
+            href="{% url 'dashboard' %}"
+            class="btn blue"
+        >
+            Dashboard
+        </a>
+
+        <a
+            href="{% url 'lobby' %}"
+            class="btn orange"
+        >
+            Volver al Lobby
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>

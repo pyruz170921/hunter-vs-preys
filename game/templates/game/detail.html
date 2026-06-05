@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Partida {{ game.pk }}</title>
+
+```
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        padding: 30px;
+    }
+
+    .card {
+        background: white;
+        padding: 20px;
+        margin-bottom: 25px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .board {
+        display: inline-grid;
+        grid-template-columns: repeat({{ board_size }}, 45px);
+        gap: 4px;
+        background: #222;
+        padding: 8px;
+        border-radius: 8px;
+    }
+
+    .cell {
+        width: 45px;
+        height: 45px;
+        background: #eaeaea;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        border-radius: 5px;
+    }
+
+    .obstacle {
+        background: #333;
+        color: white;
+    }
+
+    .hunter {
+        background: #e63946;
+        color: white;
+    }
+
+    .prey {
+        background: #2a9d8f;
+        color: white;
+    }
+
+    button {
+        padding: 10px 18px;
+        margin-right: 10px;
+        cursor: pointer;
+        border: none;
+        border-radius: 6px;
+        background: #1d3557;
+        color: white;
+        font-weight: bold;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+    }
+
+    th,
+    td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: center;
+    }
+
+    th {
+        background: #222;
+        color: white;
+    }
+
+    .legend {
+        margin-top: 15px;
+    }
+
+    .legend ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .legend li {
+        margin-bottom: 6px;
+    }
+</style>
+```
+
+</head>
+
+<body>
+
+    <script>
+
+</script>
+
+<h1>Partida {{ game.pk }}</h1>
+
+<div class="card">
+
+```
+<h2>Información General</h2>
+
+<p><strong>Estado:</strong> {{ game.status }}</p>
+
+<p><strong>Tiempo total:</strong> {{ game.total_time }}</p>
+
+<p><strong>Movimientos del cazador:</strong> {{ game.hunter_moves }}</p>
+
+<p><strong>Algoritmo del cazador:</strong> {{ hunter.algorithm }}</p>
+
+<p><strong>Algoritmo de las presas:</strong> {{ preys.0.algorithm }}</p>
+
+<p><strong>Sala:</strong> {{ game.room.name }}</p>
+```
+
+</div>
+
+<div class="card">
+
+```
+<h2>Animación del tablero</h2>
+
+<p>
+    <strong>Turno actual:</strong>
+    <span id="turn">0</span>
+</p>
+
+<button onclick="playSimulation()">
+    Reproducir
+</button>
+
+<button onclick="pauseSimulation()">
+    Pausar
+</button>
+
+<button onclick="stepSimulation()">
+    Paso a paso
+</button>
+
+<button onclick="resetBoard()">
+    Reiniciar
+</button>
+
+<br><br>
+
+<div id="board" class="board"></div>
+
+<div class="legend">
+
+    <h3>Jugadores</h3>
+
+    <ul>
+
+        <li>
+            <strong>H</strong>
+            → Cazador
+        </li>
+
+        {% for prey in preys %}
+
+        <li>
+            <strong>P{{ prey.number }}</strong>
+
+            →
+
+            {% if prey.user %}
+                {{ prey.user.username }}
+            {% else %}
+                Presa {{ prey.number }}
+            {% endif %}
+        </li>
+
+        {% endfor %}
+
+    </ul>
+
+</div>
+```
+
+</div>
+
+<div class="card">
+
+```
+<h2>Ranking Final</h2>
+
+<table>
+
+    <tr>
+        <th>Jugador</th>
+        <th>Ranking</th>
+        <th>Capturada en turno</th>
+        <th>Movimientos</th>
+        <th>Tiempo supervivencia</th>
+    </tr>
+
+    {% for prey in preys %}
+
+    <tr>
+
+        <td>
+
+            {% if prey.user %}
+                {{ prey.user.username }}
+            {% else %}
+                Presa {{ prey.number }}
+            {% endif %}
+
+        </td>
+
+        <td>{{ prey.ranking_position }}</td>
+
+        <td>{{ prey.captured_at }}</td>
+
+        <td>{{ prey.moves }}</td>
+
+        <td>{{ prey.survival_time }}</td>
+
+    </tr>
+
+    {% endfor %}
+
+</table>
+```
+
+</div>
+
+<div class="card">
+
+```
+<h2>Movimientos Registrados</h2>
+
+<table>
+
+    <tr>
+        <th>Turno</th>
+        <th>Entidad</th>
+        <th>Número</th>
+        <th>Origen</th>
+        <th>Destino</th>
+    </tr>
+
+    {% for movement in movements %}
+
+    <tr>
+
+        <td>{{ movement.turn }}</td>
+
+        <td>{{ movement.entity_type }}</td>
+
+        <td>{{ movement.entity_number }}</td>
+
+        <td>
+            ({{ movement.from_x }}, {{ movement.from_y }})
+        </td>
+
+        <td>
+            ({{ movement.to_x }}, {{ movement.to_y }})
+        </td>
+
+    </tr>
+
+    {% endfor %}
+
+</table>
+```
+
+</div>
+
+{{ obstacles|json_script:"obstacles-data" }}
+{{ initial_hunter|json_script:"hunter-data" }}
+{{ initial_preys|json_script:"preys-data" }}
+{{ movements_data|json_script:"movements-data" }}
+
+<script>
+
+const boardSize = {{ board_size }};
+
+const obstacles = JSON.parse(
+    document.getElementById(
+        "obstacles-data"
+    ).textContent
+);
+
+const initialHunter = JSON.parse(
+    document.getElementById(
+        "hunter-data"
+    ).textContent
+);
+
+const initialPreys = JSON.parse(
+    document.getElementById(
+        "preys-data"
+    ).textContent
+);
+
+const movements = JSON.parse(
+    document.getElementById(
+        "movements-data"
+    ).textContent
+);
+
+const boardElement =
+    document.getElementById("board");
+
+const turnElement =
+    document.getElementById("turn");
+
+let hunter = {};
+
+let preys = {};
+
+let currentIndex = 0;
+
+let intervalId = null;
+
+function positionKey(x, y) {
+
+    return `${x}-${y}`;
+}
+
+function resetBoard() {
+
+    clearInterval(intervalId);
+
+    intervalId = null;
+
+    currentIndex = 0;
+
+    turnElement.textContent = "0";
+
+    hunter = {
+        x: initialHunter.x,
+        y: initialHunter.y
+    };
+
+    preys = {};
+
+    initialPreys.forEach(prey => {
+
+        preys[prey.number] = {
+            x: prey.x,
+            y: prey.y,
+            alive: prey.alive
+        };
+    });
+
+    renderBoard();
+}
+
+function renderBoard() {
+
+    boardElement.innerHTML = "";
+
+    const obstacleSet = new Set(
+        obstacles.map(
+            obstacle =>
+            positionKey(
+                obstacle.x,
+                obstacle.y
+            )
+        )
+    );
+
+    for (let x = 0; x < boardSize; x++) {
+
+        for (let y = 0; y < boardSize; y++) {
+
+            const cell =
+                document.createElement("div");
+
+            cell.classList.add("cell");
+
+            const key =
+                positionKey(x, y);
+
+            if (obstacleSet.has(key)) {
+
+                cell.classList.add("obstacle");
+
+                cell.textContent = "X";
+
+            } else if (
+                hunter.x === x &&
+                hunter.y === y
+            ) {
+
+                cell.classList.add("hunter");
+
+                cell.textContent = "H";
+
+            } else {
+
+                let foundPrey = null;
+
+                Object.keys(preys).forEach(
+                    number => {
+
+                        const prey =
+                            preys[number];
+
+                        if (
+                            prey.alive &&
+                            prey.x === x &&
+                            prey.y === y
+                        ) {
+                            foundPrey = number;
+                        }
+                    }
+                );
+
+                if (foundPrey) {
+
+                    cell.classList.add("prey");
+
+                    cell.textContent =
+                        `P${foundPrey}`;
+
+                } else {
+
+                    cell.textContent = ".";
+                }
+            }
+
+            boardElement.appendChild(cell);
+        }
+    }
+}
+
+function applyMovement(movement) {
+
+    turnElement.textContent =
+        movement.turn;
+
+    if (
+        movement.entity_type ===
+        "HUNTER"
+    ) {
+
+        hunter.x = movement.to_x;
+
+        hunter.y = movement.to_y;
+    }
+
+    if (
+        movement.entity_type ===
+        "PREY"
+    ) {
+
+        const prey =
+            preys[movement.entity_number];
+
+        if (prey) {
+
+            prey.x = movement.to_x;
+
+            prey.y = movement.to_y;
+        }
+    }
+
+    Object.keys(preys).forEach(
+        number => {
+
+            const prey =
+                preys[number];
+
+            if (
+                prey.x === hunter.x &&
+                prey.y === hunter.y
+            ) {
+
+                prey.alive = false;
+            }
+        }
+    );
+
+    renderBoard();
+}
+
+function playSimulation() {
+
+    clearInterval(intervalId);
+
+    intervalId = setInterval(
+        () => {
+
+            if (
+                currentIndex >=
+                movements.length
+            ) {
+
+                clearInterval(
+                    intervalId
+                );
+
+                intervalId = null;
+
+                return;
+            }
+
+            applyMovement(
+                movements[currentIndex]
+            );
+
+            currentIndex++;
+
+        },
+        500
+    );
+}
+
+function pauseSimulation() {
+
+    clearInterval(intervalId);
+
+    intervalId = null;
+}
+
+function stepSimulation() {
+
+    pauseSimulation();
+
+    if (
+        currentIndex >=
+        movements.length
+    ) {
+        return;
+    }
+
+    applyMovement(
+        movements[currentIndex]
+    );
+
+    currentIndex++;
+}
+
+resetBoard();
+
+</script>
+
+</body>
+</html>

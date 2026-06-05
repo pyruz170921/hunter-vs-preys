@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>{{ room.name }}</title>
+
+    <style>
+
+        body{
+            font-family: Arial, sans-serif;
+            margin:40px;
+            background:#f5f5f5;
+        }
+
+        .card{
+            background:white;
+            padding:20px;
+            border-radius:10px;
+            margin-bottom:20px;
+            box-shadow:0 2px 5px rgba(0,0,0,.1);
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        th,td{
+            border:1px solid #ddd;
+            padding:10px;
+            text-align:center;
+        }
+
+        th{
+            background:#222;
+            color:white;
+        }
+
+        .ready{
+            color:green;
+            font-weight:bold;
+        }
+
+        .not-ready{
+            color:red;
+            font-weight:bold;
+        }
+
+        .btn{
+            display:inline-block;
+            padding:10px 15px;
+            background:#1976d2;
+            color:white;
+            text-decoration:none;
+            border-radius:5px;
+        }
+
+        .btn-green{
+            background:#2e7d32;
+        }
+
+        .btn-red{
+            background:#c62828;
+        }
+
+        .btn-gray{
+            background:#555;
+        }
+
+    </style>
+
+</head>
+<body>
+
+    <script>
+
+setInterval(function(){
+
+    location.reload();
+
+}, 3000);
+
+</script>
+    
+<div class="card">
+
+    <h1>{{ room.name }}</h1>
+
+    <p>
+        <strong>Código:</strong>
+        {{ room.code }}
+    </p>
+
+    <p>
+        <strong>Estado:</strong>
+        {{ room.status }}
+    </p>
+
+    <p>
+        <strong>Algoritmo:</strong>
+        {{ room.hunter_algorithm }}
+    </p>
+
+    <p>
+        <strong>Tamaño tablero:</strong>
+        {{ room.board_size }}x{{ room.board_size }}
+    </p>
+
+    <p>
+        <strong>Administrador:</strong>
+        {{ room.admin.username }}
+    </p>
+
+</div>
+
+<div class="card">
+
+    <h2>
+        Jugadores
+        ({{ participants.count }}/5)
+    </h2>
+
+    <table>
+
+        <tr>
+            <th>Jugador</th>
+            <th>Rol</th>
+            <th>Estado</th>
+        </tr>
+
+        {% for participant in participants %}
+
+        <tr>
+
+            <td>
+
+                {% if participant.user.profile.nickname %}
+                    {{ participant.user.profile.nickname }}
+                {% else %}
+                    {{ participant.user.username }}
+                {% endif %}
+
+            </td>
+
+            <td>
+                {{ participant.role }}
+            </td>
+
+            <td>
+
+                {% if participant.is_ready %}
+                    <span class="ready">
+                        READY
+                    </span>
+                {% else %}
+                    <span class="not-ready">
+                        ESPERANDO
+                    </span>
+                {% endif %}
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+</div>
+
+<div class="card">
+
+    {% for participant in participants %}
+
+        {% if participant.user == current_user %}
+
+            <a
+                class="btn"
+                href="{% url 'toggle_ready' room.id %}"
+            >
+                Cambiar READY
+            </a>
+
+        {% endif %}
+
+    {% endfor %}
+
+    {% if is_admin %}
+
+        <a
+            class="btn btn-green"
+            href="{% url 'start_game' room.id %}"
+        >
+            Iniciar Partida
+        </a>
+
+    {% endif %}
+
+    <a
+        class="btn btn-gray"
+        href="{% url 'lobby' %}"
+    >
+        Volver al Lobby
+    </a>
+
+</div>
+
+{% if messages %}
+
+<div class="card">
+
+    {% for message in messages %}
+
+        <p>
+
+            {{ message }}
+
+        </p>
+
+    {% endfor %}
+
+</div>
+
+{% endif %}
+
+</body>
+</html>

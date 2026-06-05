@@ -1,17 +1,15 @@
 venv/
-
 __pycache__/
 *.pyc
-*.pyo
-
 db.sqlite3
-
+media/
 .env
+
+*.log
 
 .vscode/
 .idea/
 
-media/
 staticfiles/
 
-*.log
+*.sqlite3
