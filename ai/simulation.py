@@ -2,7 +2,15 @@ from ai.board_generator import BoardGenerator
 from ai.graph import GridGraph
 from ai.hunter_ai import HunterAI
 from ai.prey_ai import PreyAI
-
+from game.models import (
+    Game,
+    Board,
+    Obstacle,
+    Hunter,
+    Prey,
+    GameEvent,
+    Movement,
+)
 
 class SimulationEngine:
 
@@ -41,6 +49,7 @@ class SimulationEngine:
         self.hunter_moves = 0
         self.capture_order = []
         self.max_turns = 500
+
         self.movements = []
 
     def alive_preys(self):
@@ -57,15 +66,17 @@ class SimulationEngine:
         from_position,
         to_position
     ):
-        self.movements.append({
-            "entity_type": entity_type,
-            "entity_number": entity_number,
-            "from_x": from_position[0],
-            "from_y": from_position[1],
-            "to_x": to_position[0],
-            "to_y": to_position[1],
-            "turn": self.time_elapsed + 1,
-        })
+        self.movements.append(
+            {
+                "entity_type": entity_type,
+                "entity_number": entity_number,
+                "from_x": from_position[0],
+                "from_y": from_position[1],
+                "to_x": to_position[0],
+                "to_y": to_position[1],
+                "turn": self.time_elapsed + 1,
+            }
+        )
 
     def capture_prey(self, prey):
         prey["alive"] = False
@@ -129,13 +140,9 @@ class SimulationEngine:
         occupied_positions.add(self.hunter)
 
         for prey in alive:
-            occupied_positions.remove(
-                prey["position"]
-            )
+            occupied_positions.remove(prey["position"])
 
-            prey["history"].append(
-                prey["position"]
-            )
+            prey["history"].append(prey["position"])
 
             if len(prey["history"]) > 10:
                 prey["history"].pop(0)
@@ -153,9 +160,7 @@ class SimulationEngine:
             if new_position not in occupied_positions:
                 prey["position"] = new_position
 
-            occupied_positions.add(
-                prey["position"]
-            )
+            occupied_positions.add(prey["position"])
 
             prey["moves"] += 1
             prey["survival_time"] += 1

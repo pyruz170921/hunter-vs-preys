@@ -4,82 +4,18 @@
     <title>Partida {{ game.pk }}</title>
 
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            padding: 30px;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            margin-bottom: 25px;
-            border-radius: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .board {
-            display: inline-grid;
-            grid-template-columns: repeat({{ board_size }}, 45px);
-            gap: 4px;
-            background: #222;
-            padding: 8px;
-            border-radius: 8px;
-        }
-
-        .cell {
-            width: 45px;
-            height: 45px;
-            background: #eaeaea;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            border-radius: 5px;
-        }
-
-        .obstacle {
-            background: #333;
-            color: white;
-        }
-
-        .hunter {
-            background: #e63946;
-            color: white;
-        }
-
-        .prey {
-            background: #2a9d8f;
-            color: white;
-        }
-
-        button {
-            padding: 10px 18px;
-            margin-right: 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            background: #1d3557;
-            color: white;
-            font-weight: bold;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-
-        th {
-            background: #222;
-            color: white;
-        }
+        body { font-family: Arial, sans-serif; background: #f4f6f8; padding: 30px; }
+        .card { background: white; padding: 20px; margin-bottom: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .board { display: inline-grid; grid-template-columns: repeat({{ board_size }}, 45px); gap: 4px; background: #222; padding: 8px; border-radius: 8px; }
+        .cell { width: 45px; height: 45px; background: #eaeaea; display: flex; align-items: center; justify-content: center; font-weight: bold; border-radius: 5px; }
+        .obstacle { background: #333; color: white; }
+        .hunter { background: #e63946; color: white; }
+        .prey { background: #2a9d8f; color: white; }
+        button { padding: 10px 18px; margin-right: 10px; cursor: pointer; border: none; border-radius: 6px; background: #1d3557; color: white; font-weight: bold; }
+        select { padding: 8px; margin: 0 10px; }
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #222; color: white; }
     </style>
 </head>
 
@@ -87,10 +23,36 @@
 
 <h1>Partida {{ game.pk }}</h1>
 
+<form action="{% url 'generate_new_game' %}" method="post">
+    {% csrf_token %}
+
+    <label><strong>Algoritmo del cazador:</strong></label>
+
+    <select name="hunter_algorithm">
+        <option value="DIJKSTRA">Dijkstra</option>
+        <option value="FLOYD">Floyd-Warshall</option>
+    </select>
+
+    <label><strong>Tamaño:</strong></label>
+
+    <select name="board_size">
+        <option value="8">8x8</option>
+        <option value="10">10x10</option>
+        <option value="12">12x12</option>
+        <option value="15">15x15</option>
+    </select>
+
+    <button type="submit">Iniciar nueva partida</button>
+</form>
+
+<br>
+
 <div class="card">
     <p><strong>Estado:</strong> {{ game.status }}</p>
     <p><strong>Tiempo total:</strong> {{ game.total_time }}</p>
     <p><strong>Movimientos cazador:</strong> {{ game.hunter_moves }}</p>
+    <p><strong>Algoritmo cazador:</strong> {{ hunter.algorithm }}</p>
+    <p><strong>Algoritmo presas:</strong> {{ preys.0.algorithm }}</p>
 </div>
 
 <div class="card">
@@ -99,6 +61,8 @@
     <p><strong>Turno actual:</strong> <span id="turn">0</span></p>
 
     <button onclick="playSimulation()">Reproducir</button>
+    <button onclick="pauseSimulation()">Pausar</button>
+    <button onclick="stepSimulation()">Paso a paso</button>
     <button onclick="resetBoard()">Reiniciar</button>
 
     <br><br>
@@ -115,6 +79,7 @@
             <th>Ranking</th>
             <th>Capturada en turno</th>
             <th>Movimientos</th>
+            <th>Algoritmo</th>
         </tr>
 
         {% for prey in preys %}
@@ -123,6 +88,7 @@
             <td>{{ prey.ranking_position }}</td>
             <td>{{ prey.captured_at }}</td>
             <td>{{ prey.moves }}</td>
+            <td>{{ prey.algorithm }}</td>
         </tr>
         {% endfor %}
     </table>
@@ -159,18 +125,10 @@
 
 <script>
     const boardSize = {{ board_size }};
-    const obstacles = JSON.parse(
-        document.getElementById("obstacles-data").textContent
-    );
-    const initialHunter = JSON.parse(
-        document.getElementById("hunter-data").textContent
-    );
-    const initialPreys = JSON.parse(
-        document.getElementById("preys-data").textContent
-    );
-    const movements = JSON.parse(
-        document.getElementById("movements-data").textContent
-    );
+    const obstacles = JSON.parse(document.getElementById("obstacles-data").textContent);
+    const initialHunter = JSON.parse(document.getElementById("hunter-data").textContent);
+    const initialPreys = JSON.parse(document.getElementById("preys-data").textContent);
+    const movements = JSON.parse(document.getElementById("movements-data").textContent);
 
     const boardElement = document.getElementById("board");
     const turnElement = document.getElementById("turn");
@@ -212,9 +170,7 @@
         boardElement.innerHTML = "";
 
         const obstacleSet = new Set(
-            obstacles.map(
-                obstacle => positionKey(obstacle.x, obstacle.y)
-            )
+            obstacles.map(obstacle => positionKey(obstacle.x, obstacle.y))
         );
 
         for (let x = 0; x < boardSize; x++) {
@@ -236,11 +192,7 @@
                     Object.keys(preys).forEach(number => {
                         const prey = preys[number];
 
-                        if (
-                            prey.alive &&
-                            prey.x === x &&
-                            prey.y === y
-                        ) {
+                        if (prey.alive && prey.x === x && prey.y === y) {
                             foundPrey = number;
                         }
                     });
@@ -278,10 +230,7 @@
         Object.keys(preys).forEach(number => {
             const prey = preys[number];
 
-            if (
-                prey.x === hunter.x &&
-                prey.y === hunter.y
-            ) {
+            if (prey.x === hunter.x && prey.y === hunter.y) {
                 prey.alive = false;
             }
         });
@@ -295,12 +244,29 @@
         intervalId = setInterval(() => {
             if (currentIndex >= movements.length) {
                 clearInterval(intervalId);
+                intervalId = null;
                 return;
             }
 
             applyMovement(movements[currentIndex]);
             currentIndex++;
         }, 500);
+    }
+
+    function pauseSimulation() {
+        clearInterval(intervalId);
+        intervalId = null;
+    }
+
+    function stepSimulation() {
+        pauseSimulation();
+
+        if (currentIndex >= movements.length) {
+            return;
+        }
+
+        applyMovement(movements[currentIndex]);
+        currentIndex++;
     }
 
     resetBoard();
