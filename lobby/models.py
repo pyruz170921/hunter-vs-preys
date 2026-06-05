@@ -1,7 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-
 class Room(models.Model):
 
     BOARD_SIZES = [
@@ -49,6 +48,14 @@ class Room(models.Model):
         default='WAITING'
     )
 
+    max_players = models.IntegerField(
+        default=5
+    )
+
+    started = models.BooleanField(
+        default=False
+    )
+
     created_by = models.ForeignKey(
         User,
         on_delete=models.CASCADE
@@ -58,10 +65,22 @@ class Room(models.Model):
         auto_now_add=True
     )
 
+    @property
+    def admin(self):
+        return self.created_by
+
     def __str__(self):
         return f"{self.name} ({self.code})"
     
 class RoomParticipant(models.Model):
+
+    ROLES = [
+        ("HUNTER", "Cazador"),
+        ("PREY_1", "Presa 1"),
+        ("PREY_2", "Presa 2"),
+        ("PREY_3", "Presa 3"),
+        ("PREY_4", "Presa 4"),
+    ]
 
     room = models.ForeignKey(
         Room,
@@ -74,6 +93,12 @@ class RoomParticipant(models.Model):
         on_delete=models.CASCADE
     )
 
+    role = models.CharField(
+        max_length=20,
+        choices=ROLES,
+        default="PREY_1"
+    )
+
     is_ready = models.BooleanField(
         default=False
     )
@@ -83,7 +108,16 @@ class RoomParticipant(models.Model):
     )
 
     class Meta:
-        unique_together = ('room', 'user')
+
+        unique_together = (
+            'room',
+            'user'
+        )
 
     def __str__(self):
-        return f"{self.user.username} - {self.room.name}"
+
+        return (
+            f"{self.user.username}"
+            f" - "
+            f"{self.role}"
+        )

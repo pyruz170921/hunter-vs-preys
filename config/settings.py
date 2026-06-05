@@ -25,7 +25,11 @@ SECRET_KEY = 'django-insecure-=fdv%*#*tx*f7fd^)15na3laa%d^c3^1soi%j28p4onne=0nn^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "127.0.0.1",
+    "localhost",
+    "192.168.40.8",
+]
 
 
 # Application definition
@@ -42,8 +46,6 @@ INSTALLED_APPS = [
     'lobby',
     'game',
     'ai',
-    'ranking',
-    'statistics_app',
 ]
 
 MIDDLEWARE = [

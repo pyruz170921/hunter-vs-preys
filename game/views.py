@@ -110,5 +110,15 @@ def game_detail(request, game_id):
         "initial_preys": initial_preys,
         "movements_data": movements_data,
     }
-
+    
     return render(request, "game/detail.html", context)
+
+def game_list(request):
+    games = Game.objects.all().order_by("-id")
+
+    return render(
+        request,
+        "game/list.html",
+        {"games": games}
+    )
+    

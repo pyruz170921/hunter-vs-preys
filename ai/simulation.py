@@ -49,8 +49,9 @@ class SimulationEngine:
         self.hunter_moves = 0
         self.capture_order = []
         self.max_turns = 500
-
         self.movements = []
+        self.frames = []
+        self.save_frame()
 
     def alive_preys(self):
         return [
@@ -77,6 +78,23 @@ class SimulationEngine:
                 "turn": self.time_elapsed + 1,
             }
         )
+
+    def save_frame(self):
+
+        frame = {
+            "turn": self.time_elapsed,
+            "hunter": self.hunter,
+            "preys": [
+                {
+                    "id": prey["id"],
+                    "position": prey["position"],
+                    "alive": prey["alive"]
+                }
+                for prey in self.preys
+            ]
+        }
+
+        self.frames.append(frame)
 
     def capture_prey(self, prey):
         prey["alive"] = False
@@ -177,7 +195,7 @@ class SimulationEngine:
                 self.capture_prey(prey)
 
         self.time_elapsed += 1
-
+        self.save_frame()
         return True
 
     def print_board(self):

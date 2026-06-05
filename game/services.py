@@ -8,6 +8,7 @@ from game.models import (
     Prey,
     GameEvent,
     Movement,
+    SimulationFrame,
 )
 
 
@@ -50,13 +51,28 @@ class SimulationPersistenceService:
             algorithm=simulation.hunter_algorithm,
         )
 
+        participants = {
+            participant.role: participant.user
+            for participant in room.participants.all()
+        }
+        
         for position, prey in enumerate(
             simulation.ranking(),
             start=1
         ):
+
+            role_name = (
+                f"PREY_{prey['id']}"
+            )
+
+            prey_user = (
+                participants.get(role_name)
+            )
+
             Prey.objects.create(
                 game=game,
                 number=prey["id"],
+                user=prey_user,
                 x=prey["position"][0],
                 y=prey["position"][1],
                 alive=prey["alive"],
@@ -77,6 +93,13 @@ class SimulationPersistenceService:
                 to_x=movement["to_x"],
                 to_y=movement["to_y"],
                 turn=movement["turn"],
+            )
+
+        for frame in simulation.frames:
+            SimulationFrame.objects.create(
+                game=game,
+                turn=frame["turn"],
+                state=frame,
             )
 
         GameEvent.objects.create(

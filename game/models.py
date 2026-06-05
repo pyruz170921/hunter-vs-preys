@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.db import models
 from lobby.models import Room
 
@@ -102,6 +103,14 @@ class Prey(models.Model):
     )
 
     number = models.IntegerField()
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+
     x = models.IntegerField()
     y = models.IntegerField()
 
@@ -180,3 +189,29 @@ class GameEvent(models.Model):
     turn = models.IntegerField(default=0)
 
     timestamp = models.DateTimeField(auto_now_add=True)
+
+class SimulationFrame(models.Model):
+
+    game = models.ForeignKey(
+        Game,
+        on_delete=models.CASCADE,
+        related_name="frames"
+    )
+
+    turn = models.IntegerField()
+
+    state = models.JSONField()
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ["turn"]
+
+    def __str__(self):
+
+        return (
+            f"Game {self.game.id}"
+            f" - Turn {self.turn}"
+        )
